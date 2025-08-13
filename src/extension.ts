@@ -18,6 +18,7 @@ export function activate(context: vscode.ExtensionContext) {
         const yamlContent = activeEditor.document.getText()
         console.log('YAML content length:', yamlContent.length)
         if (ComicScriptPreviewPanel.currentPanel) {
+          ComicScriptPreviewPanel.currentPanel.setSourceDocument(activeEditor.document)
           ComicScriptPreviewPanel.currentPanel.updateContent(yamlContent)
         }
       } else {
@@ -29,13 +30,53 @@ export function activate(context: vscode.ExtensionContext) {
   const openMarkdownPreviewCommand = vscode.commands.registerCommand('comicScriptPreview.openMarkdownPreview', () => {
     console.log('Opening markdown preview...')
     
-    // Get the active editor BEFORE creating the document
-    const activeEditor = vscode.window.activeTextEditor
-    console.log('Active editor:', activeEditor?.document.fileName)
+    // Function to find a comic YAML file among open editors
+    const findComicYamlEditor = (): vscode.TextEditor | undefined => {
+      // First check if the active editor is a comic YAML file
+      const activeEditor = vscode.window.activeTextEditor
+      if (activeEditor && isComicYamlFile(activeEditor.document)) {
+        return activeEditor
+      }
+      
+      // If we have a preview panel with a tracked source document, use that
+      if (ComicScriptPreviewPanel.currentPanel) {
+        const sourceDoc = ComicScriptPreviewPanel.currentPanel.getSourceDocument()
+        if (sourceDoc && isComicYamlFile(sourceDoc)) {
+          // Find the editor for this document
+          const editor = vscode.window.visibleTextEditors.find(e => e.document === sourceDoc)
+          if (editor) {
+            return editor
+          }
+          // Return pseudo-editor if no actual editor found
+          return { document: sourceDoc } as vscode.TextEditor
+        }
+      }
+      
+      // If not, search through all visible editors
+      for (const editor of vscode.window.visibleTextEditors) {
+        if (isComicYamlFile(editor.document)) {
+          return editor
+        }
+      }
+      
+      // If still not found, check all open editors (tabs)
+      for (const document of vscode.workspace.textDocuments) {
+        if (isComicYamlFile(document)) {
+          // Return a pseudo-editor object with the document
+          return vscode.window.visibleTextEditors.find(e => e.document === document) ||
+                 { document } as vscode.TextEditor
+        }
+      }
+      
+      return undefined
+    }
     
-    if (activeEditor && isComicYamlFile(activeEditor.document)) {
+    const yamlEditor = findComicYamlEditor()
+    console.log('Found YAML editor:', yamlEditor?.document.fileName)
+    
+    if (yamlEditor) {
       console.log('Found comic YAML file, generating markdown...')
-      const yamlContent = activeEditor.document.getText()
+      const yamlContent = yamlEditor.document.getText()
       
       // Convert YAML to markdown
       const { yamlToChapter } = require('./yamlConverter')
@@ -111,13 +152,19 @@ export function activate(context: vscode.ExtensionContext) {
   // Auto-update preview when YAML content changes
   const onDidChangeTextDocument = vscode.workspace.onDidChangeTextDocument(event => {
     const activeEditor = vscode.window.activeTextEditor
-    if (activeEditor && 
-        event.document === activeEditor.document && 
-        isComicYamlFile(event.document) &&
-        ComicScriptPreviewPanel.currentPanel) {
+    
+    // Update if the changed document is a comic YAML file and we have a preview panel
+    if (isComicYamlFile(event.document) && ComicScriptPreviewPanel.currentPanel) {
+      // Check if this is the document we should be tracking
+      const shouldUpdate = 
+        (activeEditor && event.document === activeEditor.document) || // YAML file is active
+        (ComicScriptPreviewPanel.currentPanel.getSourceDocument() === event.document) // Preview panel is active, tracking this YAML
       
-      const yamlContent = event.document.getText()
-      ComicScriptPreviewPanel.currentPanel.updateContent(yamlContent)
+      if (shouldUpdate) {
+        const yamlContent = event.document.getText()
+        ComicScriptPreviewPanel.currentPanel.setSourceDocument(event.document)
+        ComicScriptPreviewPanel.currentPanel.updateContent(yamlContent)
+      }
     }
   })
   
@@ -128,6 +175,7 @@ export function activate(context: vscode.ExtensionContext) {
         ComicScriptPreviewPanel.currentPanel) {
       
       const yamlContent = editor.document.getText()
+      ComicScriptPreviewPanel.currentPanel.setSourceDocument(editor.document)
       ComicScriptPreviewPanel.currentPanel.updateContent(yamlContent)
     }
   })

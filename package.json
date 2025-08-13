@@ -83,15 +83,33 @@
     "compile": "tsc -p ./",
     "watch": "tsc -watch -p ./",
     "package": "vsce package",
-    "publish": "./publish.sh"
+    "publish": "./publish.sh",
+    "test": "npm run compile:test && node ./demo/out/test/runTest.js",
+    "compile:test": "tsc -p ./demo/tsconfig.test.json",
+    "test:vscode": "npm run compile && npm run compile:test && node ./demo/out/test/runTest.js",
+    "test:playwright": "npx playwright test --config=demo/playwright.config.ts",
+    "test:playwright:ui": "npx playwright test --config=demo/playwright.config.ts --ui",
+    "test:playwright:demo": "npx playwright test demo/tests/working-demo.spec.ts --config=demo/playwright.config.ts --headed",
+    "demo:setup": "node demo/demo-script.js",
+    "demo:automated": "node demo/run-automated-demo.js",
+    "demo:focus": "node demo/focus-demo-window.js",
+    "pretest": "npm run compile",
+    "install:playwright": "npx playwright install"
   },
   "devDependencies": {
+    "@playwright/test": "^1.54.2",
+    "@types/glob": "^9.0.0",
     "@types/js-yaml": "^4.0.9",
+    "@types/mocha": "^10.0.10",
     "@types/node": "16.x",
     "@types/vscode": "^1.74.0",
+    "@vscode/test-electron": "^2.5.2",
+    "glob": "^11.0.3",
+    "mocha": "^11.7.1",
     "typescript": "^4.9.4"
   },
   "dependencies": {
-    "js-yaml": "^4.1.0"
+    "js-yaml": "^4.1.0",
+    "playwright": "^1.54.2"
   }
 }

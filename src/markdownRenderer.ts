@@ -9,15 +9,23 @@ export const renderDialogue = (dialogue: Dialogue): string => {
   const character = dialogue.character || "Character"
   const type = dialogue.type || "speech"
   
-  if (type === "narration") {
+  // Handle narration (either by isNarration flag or type)
+  if (dialogue.isNarration || type === "narration") {
     return `*${text}*`
   }
   
-  if (type === "speech") {
-    return `**${character}:** ${text}`
+  // Handle sound effects
+  if (type === "sound_effect") {
+    return `**${text}**`
   }
   
-  return `**${character}:** (${type}) ${text}`
+  // Handle normal speech
+  if (type === "speech") {
+    return `**${character.toUpperCase()}:** ${text}`
+  }
+  
+  // Handle special speech types (whisper, thought, etc.)
+  return `**${character.toUpperCase()}:** (${type}) ${text}`
 }
 
 export const renderPanel = (panel: Panel, panelIndex?: number): string => {

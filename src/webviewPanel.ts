@@ -12,6 +12,7 @@ export class ComicScriptPreviewPanel {
   private _disposables: vscode.Disposable[] = []
   private _currentMarkdown: string = ''
   private _lastValidYaml: string = ''
+  private _sourceDocument: vscode.TextDocument | undefined
   
   public static createOrShow(extensionUri: vscode.Uri) {
     const column = vscode.window.activeTextEditor
@@ -108,6 +109,14 @@ export class ComicScriptPreviewPanel {
   public getCurrentMarkdown(): string {
     return this._currentMarkdown
   }
+  
+  public getSourceDocument(): vscode.TextDocument | undefined {
+    return this._sourceDocument
+  }
+  
+  public setSourceDocument(document: vscode.TextDocument) {
+    this._sourceDocument = document
+  }
 
   public print() {
     this._handlePrint()
@@ -189,16 +198,7 @@ export class ComicScriptPreviewPanel {
   private _getHtmlTemplate(content: string, includeButton: boolean): string {
     const printButton = includeButton ? `
             <div class="print-button">
-                <button id="printBtn" style="
-                    background-color: #0366d6;
-                    color: #fff;
-                    border: none;
-                    padding: 8px 16px;
-                    border-radius: 4px;
-                    cursor: pointer;
-                    font-family: inherit;
-                    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-                ">🖨️ Print</button>
+                <button id="printBtn" title="Print">🖨️</button>
             </div>` : '';
 
     const printButtonScript = includeButton ? `
@@ -312,10 +312,27 @@ export class ComicScriptPreviewPanel {
             
             ${includeButton ? `
             .print-button {
-                position: absolute;
-                top: 10px;
-                right: 10px;
+                position: fixed;
+                top: 8px;
+                right: 8px;
                 z-index: 1000;
+            }
+            
+            .print-button button {
+                background: rgba(255, 255, 255, 0.9);
+                border: 1px solid #ddd;
+                border-radius: 3px;
+                padding: 4px 6px;
+                cursor: pointer;
+                font-size: 12px;
+                line-height: 1;
+                box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+                transition: all 0.2s ease;
+            }
+            
+            .print-button button:hover {
+                background: rgba(255, 255, 255, 1);
+                box-shadow: 0 2px 4px rgba(0,0,0,0.2);
             }
             
             @media print {

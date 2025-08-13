@@ -5,3 +5,14 @@ out/
 .vscode-test/
 .DS_Store
 .env.local
+
+# Demo and testing files (not part of the extension)
+demo/
+*.scpt
+playwright-report/
+test-results/
+playwright.config.js
+playwright.config.js.map
+.vscode-demo-data/
+
+# All test-related files moved to demo/

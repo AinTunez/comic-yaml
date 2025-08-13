@@ -78,7 +78,8 @@ export const yamlToChapter = (yamlString: string): Chapter => {
                     return {
                       character: "",
                       text,
-                      type: type || "narration"
+                      type: type || "narration",
+                      isNarration: true
                     }
                   } else {
                     const [character, typeStr] = key.split("/")

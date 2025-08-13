@@ -28,7 +28,9 @@ The extension expects YAML files with this structure:
 ```yaml
 title: "Chapter Title"
 synopsis: "Optional chapter synopsis"
-credits: "Writer: John Doe, Artist: Jane Smith"
+credits: 
+  - Written by XMAN
+  - Edited by YMAN
 
 pages:
   - name: "Opening Scene"  # Optional page name
@@ -38,8 +40,8 @@ pages:
         fx: "RUMBLE"
         caption: "The city never sleeps..."
         dialogue:
-          - "Character/speech": "Hello world!"
-          - "Character/thought": "This is a thought bubble"
+          - "CHARACTER": "Hello world!"
+          - "CHARACTER/thought": "This is a thought bubble"
           - "/narration": "Narrative text"
         endCaption: "To be continued..."
 ```
@@ -73,6 +75,45 @@ Please report issues on our [GitHub repository](https://github.com/aintunez/comi
 ## Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
+
+## Testing & Development
+
+This extension includes comprehensive Playwright testing for automated demos and feature validation.
+
+### Running Tests
+
+#### Install Test Dependencies
+```bash
+npm install
+npm run install:playwright
+```
+
+#### Run VS Code Extension Tests
+```bash
+npm run test
+```
+
+#### Run Playwright Tests
+```bash
+# Run all Playwright tests
+npm run test:playwright
+
+# Run with UI (interactive)
+npm run test:playwright:ui
+
+# Run only the comprehensive demo test
+npm run test:playwright:demo
+```
+
+### Automated Demo Features
+
+The Playwright tests include a comprehensive demo that automatically:
+
+1. **Creates a complete comic script** with title, synopsis, credits, and multiple pages
+2. **Demonstrates HTML Preview** with professional comic script formatting
+3. **Shows Markdown Export** with clean, export-ready formatting
+4. **Tests Live Updates** by editing YAML in real-time
+5. **Validates Error Handling** with invalid YAML parsing
 
 ## License
 

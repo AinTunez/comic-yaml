@@ -2,6 +2,7 @@ export type Dialogue = {
   character: string
   text: string
   type: string
+  isNarration?: boolean
 }
 
 export type Panel = {
