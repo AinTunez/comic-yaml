@@ -2,7 +2,7 @@
   "name": "comic-yaml",
   "displayName": "Comic YAML",
   "description": "Preview YAML comic scripts as formatted markdown and full HTML preview with print functionality",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "publisher": "TechnoMoose",
   "icon": "icon.png",
   "galleryBanner": {
