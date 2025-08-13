@@ -1,0 +1,80 @@
+{
+  "name": "comic-script-preview",
+  "displayName": "Comic Script Preview",
+  "description": "Preview YAML comic scripts as formatted markdown with print functionality",
+  "version": "1.0.0",
+  "publisher": "your-publisher-name",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/your-username/comic-script-preview.git"
+  },
+  "homepage": "https://github.com/your-username/comic-script-preview",
+  "bugs": {
+    "url": "https://github.com/your-username/comic-script-preview/issues"
+  },
+  "keywords": ["comic", "script", "yaml", "preview", "markdown"],
+  "engines": {
+    "vscode": "^1.74.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onLanguage:yaml"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "comicScriptPreview.openPreview",
+        "title": "Open Comic Script Preview",
+        "icon": "$(open-preview)"
+      },
+      {
+        "command": "comicScriptPreview.openMarkdownPreview",
+        "title": "Open Raw Markdown Preview",
+        "icon": "$(markdown)"
+      },
+      {
+        "command": "comicScriptPreview.print",
+        "title": "Print Comic Script",
+        "icon": "$(output)"
+      }
+    ],
+    "menus": {
+      "editor/title": [
+        {
+          "command": "comicScriptPreview.openPreview",
+          "when": "resourceFilename =~ /\\.comic\\.(yml|yaml)$/",
+          "group": "navigation"
+        },
+        {
+          "command": "comicScriptPreview.openMarkdownPreview",
+          "when": "resourceFilename =~ /\\.comic\\.(yml|yaml)$/",
+          "group": "navigation"
+        }
+      ],
+      "webview/title": [
+        {
+          "command": "comicScriptPreview.print",
+          "when": "webviewType == 'comicScriptPreview'",
+          "group": "navigation"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./"
+  },
+  "devDependencies": {
+    "@types/js-yaml": "^4.0.9",
+    "@types/node": "16.x",
+    "@types/vscode": "^1.74.0",
+    "typescript": "^4.9.4"
+  },
+  "dependencies": {
+    "js-yaml": "^4.1.0"
+  }
+}
