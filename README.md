@@ -1,13 +1,16 @@
 # Comic Script Preview
 
-A VS Code extension for previewing YAML comic scripts as formatted markdown.
+Transform your YAML comic scripts into beautifully formatted, professional previews directly in VS Code. Perfect for comic writers, graphic novel authors, and anyone working with sequential art narratives.
 
 ## Features
 
-- **Live Preview**: Open a side-by-side preview of your YAML comic script files
-- **Auto-Update**: Preview automatically updates as you edit the YAML content
-- **Comic Script Format**: Supports the structured comic script format with chapters, pages, panels, and dialogue
-- **VS Code Integration**: Works seamlessly with VS Code's editor and theme system
+- 📖 **Live Preview**: Open a side-by-side preview of your YAML comic script files
+- 🔄 **Auto-Update**: Preview automatically updates as you edit the YAML content
+- 🎨 **Professional Formatting**: Clean, readable layout optimized for comic scripts
+- 🖨️ **Print & Export**: Save your scripts as PDF with one click
+- 📝 **Structured Format**: Full support for chapters, pages, panels, dialogue, and narrative elements
+- ⚡ **Smart Error Recovery**: Maintains last valid preview even with syntax errors
+- 🎯 **VS Code Integration**: Works seamlessly with VS Code's editor and theme system
 
 ## Usage
 
@@ -41,15 +44,36 @@ pages:
         endCaption: "To be continued..."
 ```
 
-## Development
+## Installation
 
-To build and test the extension:
+### From VS Code Marketplace
+1. Open VS Code
+2. Go to Extensions (Ctrl+Shift+X / Cmd+Shift+X)
+3. Search for "Comic Script Preview"
+4. Click Install
 
-1. Install dependencies: `npm install`
-2. Compile: `npm run compile`
-3. Open in VS Code and press F5 to launch Extension Development Host
+### Manual Installation
+1. Download the `.vsix` file from the releases page
+2. In VS Code, go to Extensions
+3. Click the "..." menu and select "Install from VSIX..."
 
 ## Requirements
 
-- VS Code ^1.74.0
-- YAML files with comic script structure
+- VS Code version 1.74.0 or higher
+- YAML files following the comic script structure (`.comic.yml` or `.comic.yaml`)
+
+## Extension Settings
+
+This extension works out of the box with no configuration required.
+
+## Known Issues
+
+Please report issues on our [GitHub repository](https://github.com/UPDATE-YOUR-USERNAME/comic-script-preview/issues).
+
+## Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+## License
+
+This extension is licensed under the [MIT License](LICENSE).

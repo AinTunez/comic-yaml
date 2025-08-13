@@ -1,3 +1,6 @@
-/node_modules
-/.claude
-/out
+node_modules/
+.claude/
+out/
+*.vsix
+.vscode-test/
+.DS_Store
