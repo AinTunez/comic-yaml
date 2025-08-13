@@ -86,6 +86,7 @@
     "watch": "tsc -watch -p ./",
     "package": "vsce package",
     "publish": "./publish.sh",
+    "install:local": "npm run package && code --install-extension $(ls comic-yaml-*.vsix | sort -V | tail -n 1) --force",
     "test": "npm run compile:test && node ./demo/out/test/runTest.js",
     "compile:test": "tsc -p ./demo/tsconfig.test.json",
     "test:vscode": "npm run compile && npm run compile:test && node ./demo/out/test/runTest.js",
