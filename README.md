@@ -1,4 +1,4 @@
-# Comic Script Preview
+# Comic YAML
 
 Transform your YAML comic scripts into beautifully formatted, professional previews directly in VS Code. Perfect for comic writers, graphic novel authors, and anyone working with sequential art narratives.
 
@@ -49,7 +49,7 @@ pages:
 ### From VS Code Marketplace
 1. Open VS Code
 2. Go to Extensions (Ctrl+Shift+X / Cmd+Shift+X)
-3. Search for "Comic Script Preview"
+3. Search for "Comic YAML"
 4. Click Install
 
 ### Manual Installation
@@ -68,7 +68,7 @@ This extension works out of the box with no configuration required.
 
 ## Known Issues
 
-Please report issues on our [GitHub repository](https://github.com/UPDATE-YOUR-USERNAME/comic-script-preview/issues).
+Please report issues on our [GitHub repository](https://github.com/aintunez/comic-yaml/issues).
 
 ## Contributing
 
