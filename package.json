@@ -2,7 +2,7 @@
   "name": "comic-yaml",
   "displayName": "Comic YAML",
   "description": "Preview YAML comic scripts as formatted markdown and full HTML preview with print functionality",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "publisher": "TechnoMoose",
   "icon": "icon.png",
   "galleryBanner": {
@@ -13,9 +13,9 @@
     "type": "git",
     "url": "https://github.com/aintunez/comic-yaml.git"
   },
-  "homepage": "https://github.com/UPDATE-YOUR-USERNAME/comic-yaml",
+  "homepage": "https://github.com/aintunez/comic-yaml",
   "bugs": {
-    "url": "https://github.com/UPDATE-YOUR-USERNAME/comic-yaml/issues"
+    "url": "https://github.com/aintunez/comic-yaml/issues"
   },
   "license": "MIT",
   "keywords": [
