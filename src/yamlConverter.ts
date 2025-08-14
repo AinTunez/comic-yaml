@@ -36,14 +36,18 @@ export const yamlToChapter = (yamlString: string): Chapter => {
           page.name = pageData.name
         }
         
+        if (pageData.layout) {
+          page.layout = pageData.layout
+        }
+        
         if (pageData.panels && Array.isArray(pageData.panels)) {
           page.panels = pageData.panels.map((panelData: any) => {
             const panel: Panel = {
               dialogue: []
             }
             
-            if (panelData.name) {
-              panel.name = panelData.name
+            if (panelData.label) {
+              panel.label = panelData.label
             }
             
             if (panelData.desc) {

@@ -35,7 +35,7 @@ credits:
 pages:
   - name: "Opening Scene"  # Optional page name
     panels:
-      - name: "Establishing Shot"  # Optional panel name
+      - label: "A"
         desc: "Wide shot of the city skyline at dawn"
         fx: "RUMBLE"
         caption: "The city never sleeps..."

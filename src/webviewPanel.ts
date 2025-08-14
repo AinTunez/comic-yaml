@@ -1,6 +1,8 @@
 import * as vscode from 'vscode'
 import { yamlToChapter } from './yamlConverter'
 import { renderChapter } from './markdownRenderer'
+import { Chapter } from './types'
+import { parseLayout, renderLayoutToSVG } from './layoutParser'
 
 export class ComicScriptPreviewPanel {
   public static currentPanel: ComicScriptPreviewPanel | undefined
@@ -84,8 +86,8 @@ export class ComicScriptPreviewPanel {
       this._lastValidYaml = yamlContent
       this._currentMarkdown = markdown
       
-      // Update the HTML
-      this._panel.webview.html = this._getHtmlForWebview(this._panel.webview, markdown)
+      // Update the HTML with chapter data for layouts
+      this._panel.webview.html = this._getHtmlForWebview(this._panel.webview, markdown, chapter)
       
     } catch (error) {
       console.log('YAML parsing failed, using last valid content:', error)
@@ -96,7 +98,7 @@ export class ComicScriptPreviewPanel {
           const chapter = yamlToChapter(this._lastValidYaml)
           const markdown = renderChapter(chapter)
           this._currentMarkdown = markdown
-          this._panel.webview.html = this._getHtmlForWebview(this._panel.webview, markdown)
+          this._panel.webview.html = this._getHtmlForWebview(this._panel.webview, markdown, chapter)
         } catch (fallbackError) {
           console.log('Fallback parsing also failed:', fallbackError)
           // Keep the existing content if fallback fails too
@@ -159,12 +161,28 @@ export class ComicScriptPreviewPanel {
   }
 
   private _getPrintableHtml(): string {
-    const content = this._currentMarkdown ? this._markdownToHtml(this._currentMarkdown) : `
-      <h1>Comic Script Preview</h1>
-      <p>No content available for printing.</p>
-    `;
+    if (!this._currentMarkdown) {
+      const content = `
+        <h1>Comic Script Preview</h1>
+        <p>No content available for printing.</p>
+      `;
+      return this._getHtmlTemplate(content, false, '');
+    }
 
-    return this._getHtmlTemplate(content, false);
+    let chapter: Chapter | undefined;
+    if (this._lastValidYaml) {
+      try {
+        chapter = yamlToChapter(this._lastValidYaml);
+      } catch (e) {
+        // Ignore errors
+      }
+    }
+
+    const integratedContent = chapter ? 
+      this._generateIntegratedPageSections(this._currentMarkdown, chapter) :
+      this._markdownToHtml(this._currentMarkdown);
+      
+    return this._getHtmlTemplate(integratedContent, false, '');
   }
 
   public dispose() {
@@ -184,18 +202,23 @@ export class ComicScriptPreviewPanel {
     const webview = this._panel.webview
     
     this._panel.title = 'Comic Script Preview'
-    this._panel.webview.html = this._getHtmlForWebview(webview, this._currentMarkdown)
+    this._panel.webview.html = this._getHtmlForWebview(webview, this._currentMarkdown, undefined)
   }
   
-  private _getHtmlForWebview(webview: vscode.Webview, markdown?: string) {
-    const content = markdown ? this._markdownToHtml(markdown) : `
-      <h1>Comic Script Preview</h1>
-      <p>Select a YAML file and click the preview button to see the comic script rendered here.</p>
-    `;
-    return this._getHtmlTemplate(content, true);
+  private _getHtmlForWebview(webview: vscode.Webview, markdown?: string, chapter?: Chapter) {
+    if (!markdown || !chapter) {
+      const content = `
+        <h1>Comic Script Preview</h1>
+        <p>Select a YAML file and click the preview button to see the comic script rendered here.</p>
+      `;
+      return this._getHtmlTemplate(content, true, '');
+    }
+    
+    const integratedContent = this._generateIntegratedPageSections(markdown, chapter);
+    return this._getHtmlTemplate(integratedContent, true, '');
   }
 
-  private _getHtmlTemplate(content: string, includeButton: boolean): string {
+  private _getHtmlTemplate(content: string, includeButton: boolean, layouts: string = ''): string {
     const printButton = includeButton ? `
             <div class="print-button">
                 <button id="printBtn" title="Print">🖨️</button>
@@ -340,12 +363,78 @@ export class ComicScriptPreviewPanel {
                     display: none !important;
                 }
             }` : ''}
+            
+            .page-section {
+                display: flex;
+                margin: 30px 0;
+                gap: 30px;
+                page-break-inside: avoid;
+                align-items: flex-start;
+            }
+            
+            .page-content {
+                flex: 2;
+                min-width: 0;
+            }
+            
+            .page-layout {
+                flex: 1;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                background: #f9f9f9;
+                padding: 15px;
+                border: 1px solid #e0e0e0;
+                border-radius: 8px;
+                min-width: 250px;
+            }
+            
+            .page-layout h4 {
+                margin: 0 0 15px 0;
+                font-size: 14px;
+                color: #666;
+                text-align: center;
+            }
+            
+            .layout-svg {
+                max-width: 100%;
+                height: auto;
+            }
+            
+            .page-section h2 {
+                margin: 0 0 20px 0;
+                color: #555;
+                font-size: 18px;
+                font-weight: 600;
+                border-bottom: 2px solid #e0e0e0;
+                padding-bottom: 10px;
+            }
+            
+            @media print {
+                .page-layout {
+                    background: white;
+                    border: 1px solid #ccc;
+                    padding: 10px;
+                }
+            }
+            
+            @media (max-width: 768px) {
+                .page-section {
+                    flex-direction: column;
+                }
+                
+                .page-layout {
+                    order: -1;
+                    align-self: stretch;
+                }
+            }
         </style>
     </head>
     <body>
         <div class="content">
             ${printButton}
             <div${includeButton ? ' id="preview-content"' : ''}>
+                ${layouts}
                 ${content}
             </div>
         </div>
@@ -420,5 +509,108 @@ export class ComicScriptPreviewPanel {
     return text
       .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
       .replace(/\*(.*?)\*/g, '<em>$1</em>');
+  }
+
+  private _generateIntegratedPageSections(markdown: string, chapter: Chapter): string {
+    const lines = markdown.split('\n');
+    const pages = chapter.pages || [];
+    
+    let html = '';
+    let currentPageIndex = -1;
+    let pageContent = '';
+    let inPage = false;
+    
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      
+      // Check if this is a page header (## Page Name)
+      if (line.startsWith('## ')) {
+        // If we were building a page, close it
+        if (inPage && currentPageIndex >= 0) {
+          html += this._renderPageSection(pageContent, pages[currentPageIndex], currentPageIndex);
+          pageContent = '';
+        }
+        
+        // Start new page
+        currentPageIndex++;
+        inPage = true;
+        pageContent = '<h2>' + line.substring(3) + '</h2>\n';
+      } else if (inPage) {
+        // Add content to current page
+        if (line.trim() === '') {
+          pageContent += '\n';
+        } else if (line.startsWith('# ')) {
+          pageContent += '<h1>' + line.substring(2) + '</h1>\n';
+        } else if (line.startsWith('### ')) {
+          pageContent += '<h3>' + line.substring(4) + '</h3>\n';
+        } else if (line.startsWith('> ')) {
+          pageContent += '<blockquote>' + this._processBlockquoteContent(line.substring(2)) + '</blockquote>\n';
+        } else {
+          pageContent += '<p>' + this._processInlineFormatting(line) + '</p>\n';
+        }
+      } else {
+        // Before any pages, add as header content
+        if (line.trim() === '') {
+          html += '\n';
+        } else if (line.startsWith('# ')) {
+          html += '<h1>' + line.substring(2) + '</h1>\n';
+        } else {
+          html += '<p>' + this._processInlineFormatting(line) + '</p>\n';
+        }
+      }
+    }
+    
+    // Close the last page if needed
+    if (inPage && currentPageIndex >= 0) {
+      html += this._renderPageSection(pageContent, pages[currentPageIndex], currentPageIndex);
+    }
+    
+    return html;
+  }
+
+  private _renderPageSection(pageContent: string, page: any, index: number): string {
+    const pageNum = index + 1;
+    const pageName = page?.name || `Page ${pageNum}`;
+    
+    let layoutHtml = '';
+    if (page?.layout && page.layout.trim()) {
+      try {
+        const parsedLayout = parseLayout(page.layout);
+        const svg = renderLayoutToSVG(parsedLayout, 280, 420, {
+          showNumbers: true,
+          showGrid: false
+        });
+        console.log(`Generated SVG length:`, svg.length);
+        
+        layoutHtml = `
+          <div class="page-layout">
+            <div class="layout-svg">${svg}</div>
+          </div>
+        `;
+      } catch (error) {
+        console.error(`Error parsing layout for ${pageName}:`, error);
+        layoutHtml = `
+          <div class="page-layout">
+            <p style="color: #999; font-style: italic;">Layout parsing error: ${error instanceof Error ? error.message : 'Unknown error'}</p>
+          </div>
+        `;
+      }
+    } else {
+      // Show placeholder when no layout is defined
+      layoutHtml = `
+        <div class="page-layout">
+          <p style="color: #999; font-style: italic; text-align: center; padding: 20px;">No layout defined</p>
+        </div>
+      `;
+    }
+    
+    return `
+      <div class="page-section">
+        <div class="page-content">
+          ${pageContent}
+        </div>
+        ${layoutHtml}
+      </div>
+    `;
   }
 }

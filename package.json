@@ -97,7 +97,8 @@
     "demo:automated": "node demo/run-automated-demo.js",
     "demo:focus": "node demo/focus-demo-window.js",
     "pretest": "npm run compile",
-    "install:playwright": "npx playwright install"
+    "install:playwright": "npx playwright install",
+    "dev": "open dev/layout-tester.html || start dev/layout-tester.html || xdg-open dev/layout-tester.html"
   },
   "devDependencies": {
     "@playwright/test": "^1.54.2",

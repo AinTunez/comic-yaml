@@ -34,8 +34,8 @@ export const renderPanel = (panel: Panel, panelIndex?: number): string => {
   }
   
   const panelNumber = panelIndex !== undefined ? panelIndex + 1 : 1
-  const title = panel.name 
-    ? `(Panel ${panelNumber}) ${panel.name}`
+  const title = panel.label 
+    ? `(Panel ${panelNumber}) ${panel.label}`
     : `(Panel ${panelNumber})`
   const parts: string[] = [`### ${title}`]
   

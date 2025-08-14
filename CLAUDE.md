@@ -45,4 +45,4 @@ This is a VS Code extension for previewing YAML comic scripts as formatted markd
 - Support for `.comic.yml` and `.comic.yaml` files
 
 **YAML Format:**
-Files use a structured format with `title`, `synopsis`, `credits`, and `pages` containing nested `panels` with `dialogue` arrays. Special dialogue syntax includes `/narration` for narrative text and `Character/type` for different speech types.
+Files use a structured format with `title`, `synopsis`, `credits`, and `pages` containing nested `panels` with `dialogue` arrays. Panels support optional `label` field to override the default panel numbering in the rendered markdown (should correspond to layout grid numbers/letters like "1", "2", "A", etc.). Special dialogue syntax includes `/narration` for narrative text and `Character/type` for different speech types.

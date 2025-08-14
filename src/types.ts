@@ -6,7 +6,7 @@ export type Dialogue = {
 }
 
 export type Panel = {
-  name?: string
+  label?: string
   desc?: string
   fx?: string
   caption?: string
@@ -16,6 +16,7 @@ export type Panel = {
 
 export type Page = {
   name?: string
+  layout?: string | string[]
   panels: Panel[]
 }
 
