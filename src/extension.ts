@@ -185,8 +185,11 @@ export function activate(context: vscode.ExtensionContext) {
     // The panel already retains its last valid state, so we don't need to do anything
   })
   
-  // Sync scroll position when YAML editor scrolls
-  const onDidChangeTextEditorVisibleRanges = vscode.window.onDidChangeTextEditorVisibleRanges(event => {
+  // Throttle mechanism for cursor sync
+  let syncTimeout: NodeJS.Timeout | undefined
+  
+  // Sync preview based on cursor position
+  const onDidChangeTextEditorSelection = vscode.window.onDidChangeTextEditorSelection(event => {
     const editor = event.textEditor
     
     // Check if this is a comic YAML file and we have a preview panel
@@ -194,20 +197,27 @@ export function activate(context: vscode.ExtensionContext) {
       // Check if this is the document being tracked
       const trackedDoc = ComicScriptPreviewPanel.currentPanel.getSourceDocument()
       if (trackedDoc === editor.document) {
-        // Get the visible ranges
-        const visibleRanges = event.visibleRanges
-        if (visibleRanges.length > 0) {
-          // Get the first visible line
-          const firstVisibleLine = visibleRanges[0].start.line
-          
-          // Find the structural context at this line
-          const context = findYamlContext(editor.document, firstVisibleLine)
-          
-          if (context) {
-            // Send context-based scroll update to preview panel
-            ComicScriptPreviewPanel.currentPanel.syncScrollToElement(context)
-          }
+        // Clear any pending sync
+        if (syncTimeout) {
+          clearTimeout(syncTimeout)
         }
+        
+        // Throttle the sync to avoid too many updates during rapid navigation
+        syncTimeout = setTimeout(() => {
+          // Get the cursor position
+          const cursorPosition = event.selections[0]?.active
+          if (cursorPosition) {
+            const cursorLine = cursorPosition.line
+            
+            // Find the structural context at the cursor line
+            const context = findYamlContext(editor.document, cursorLine)
+            
+            if (context && ComicScriptPreviewPanel.currentPanel) {
+              // Send context-based scroll update to preview panel
+              ComicScriptPreviewPanel.currentPanel.syncScrollToElement(context)
+            }
+          }
+        }, 100) // 100ms delay for throttling
       }
     }
   })
@@ -218,7 +228,7 @@ export function activate(context: vscode.ExtensionContext) {
     printCommand,
     onDidChangeTextDocument,
     onDidChangeActiveTextEditor,
-    onDidChangeTextEditorVisibleRanges
+    onDidChangeTextEditorSelection
   )
 }
 
