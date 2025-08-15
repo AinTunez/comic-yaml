@@ -170,13 +170,45 @@ export function activate(context: vscode.ExtensionContext) {
   
   // Update preview when switching to a different YAML file
   const onDidChangeActiveTextEditor = vscode.window.onDidChangeActiveTextEditor(editor => {
-    if (editor && 
-        isComicYamlFile(editor.document) && 
-        ComicScriptPreviewPanel.currentPanel) {
-      
+    // Only update if we have a preview panel
+    if (!ComicScriptPreviewPanel.currentPanel) {
+      return
+    }
+    
+    // If switching to a comic YAML file, update the preview
+    if (editor && isComicYamlFile(editor.document)) {
       const yamlContent = editor.document.getText()
       ComicScriptPreviewPanel.currentPanel.setSourceDocument(editor.document)
       ComicScriptPreviewPanel.currentPanel.updateContent(yamlContent)
+    }
+    // When switching away from a YAML file, keep the preview content
+    // The panel already retains its last valid state, so we don't need to do anything
+  })
+  
+  // Sync scroll position when YAML editor scrolls
+  const onDidChangeTextEditorVisibleRanges = vscode.window.onDidChangeTextEditorVisibleRanges(event => {
+    const editor = event.textEditor
+    
+    // Check if this is a comic YAML file and we have a preview panel
+    if (isComicYamlFile(editor.document) && ComicScriptPreviewPanel.currentPanel) {
+      // Check if this is the document being tracked
+      const trackedDoc = ComicScriptPreviewPanel.currentPanel.getSourceDocument()
+      if (trackedDoc === editor.document) {
+        // Get the visible ranges
+        const visibleRanges = event.visibleRanges
+        if (visibleRanges.length > 0) {
+          // Get the first visible line
+          const firstVisibleLine = visibleRanges[0].start.line
+          
+          // Find the structural context at this line
+          const context = findYamlContext(editor.document, firstVisibleLine)
+          
+          if (context) {
+            // Send context-based scroll update to preview panel
+            ComicScriptPreviewPanel.currentPanel.syncScrollToElement(context)
+          }
+        }
+      }
     }
   })
   
@@ -185,13 +217,67 @@ export function activate(context: vscode.ExtensionContext) {
     openMarkdownPreviewCommand,
     printCommand,
     onDidChangeTextDocument,
-    onDidChangeActiveTextEditor
+    onDidChangeActiveTextEditor,
+    onDidChangeTextEditorVisibleRanges
   )
 }
 
 function isComicYamlFile(document: vscode.TextDocument): boolean {
   const fileName = document.fileName.toLowerCase()
   return fileName.endsWith('.comic.yml') || fileName.endsWith('.comic.yaml')
+}
+
+function findYamlContext(document: vscode.TextDocument, lineNumber: number): { pageIndex?: number, panelIndex?: number } | null {
+  const text = document.getText()
+  const lines = text.split('\n')
+  
+  // Track current context as we parse
+  let currentPageIndex = -1
+  let currentPanelIndex = -1
+  let inPages = false
+  let inPanels = false
+  
+  for (let i = 0; i <= lineNumber && i < lines.length; i++) {
+    const line = lines[i]
+    const trimmedLine = line.trim()
+    
+    // Check if we're entering pages section
+    if (trimmedLine === 'pages:') {
+      inPages = true
+      currentPageIndex = -1
+      currentPanelIndex = -1
+      continue
+    }
+    
+    // Check for page start (look for "- name:" at page level)
+    if (inPages && /^  - (name:|panels:)/.test(line)) {
+      currentPageIndex++
+      currentPanelIndex = -1
+      inPanels = false
+    }
+    
+    // Check if we're entering panels section
+    if (inPages && /^    panels:/.test(line)) {
+      inPanels = true
+      currentPanelIndex = -1
+      continue
+    }
+    
+    // Check for panel start
+    if (inPanels && /^      - /.test(line)) {
+      currentPanelIndex++
+    }
+  }
+  
+  // Return the context if we found valid indices
+  if (currentPageIndex >= 0) {
+    return {
+      pageIndex: currentPageIndex,
+      panelIndex: currentPanelIndex >= 0 ? currentPanelIndex : undefined
+    }
+  }
+  
+  return null
 }
 
 export function deactivate() {}

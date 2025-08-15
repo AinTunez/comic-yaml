@@ -14,6 +14,7 @@ export class ComicScriptPreviewPanel {
   private _disposables: vscode.Disposable[] = []
   private _currentMarkdown: string = ''
   private _lastValidYaml: string = ''
+  private _lastValidChapter: Chapter | undefined
   private _sourceDocument: vscode.TextDocument | undefined
   
   public static createOrShow(extensionUri: vscode.Uri) {
@@ -82,9 +83,10 @@ export class ComicScriptPreviewPanel {
       const markdown = renderChapter(chapter)
       console.log('Generated markdown:', markdown.substring(0, 200) + '...')
       
-      // If successful, store both the YAML and markdown
+      // If successful, store the YAML, markdown, and chapter
       this._lastValidYaml = yamlContent
       this._currentMarkdown = markdown
+      this._lastValidChapter = chapter
       
       // Update the HTML with chapter data for layouts
       this._panel.webview.html = this._getHtmlForWebview(this._panel.webview, markdown, chapter)
@@ -98,6 +100,7 @@ export class ComicScriptPreviewPanel {
           const chapter = yamlToChapter(this._lastValidYaml)
           const markdown = renderChapter(chapter)
           this._currentMarkdown = markdown
+          this._lastValidChapter = chapter
           this._panel.webview.html = this._getHtmlForWebview(this._panel.webview, markdown, chapter)
         } catch (fallbackError) {
           console.log('Fallback parsing also failed:', fallbackError)
@@ -122,6 +125,15 @@ export class ComicScriptPreviewPanel {
 
   public print() {
     this._handlePrint()
+  }
+  
+  public syncScrollToElement(context: { pageIndex?: number, panelIndex?: number }) {
+    // Send a message to the webview to scroll to a specific element
+    this._panel.webview.postMessage({
+      type: 'scrollToElement',
+      pageIndex: context.pageIndex,
+      panelIndex: context.panelIndex
+    })
   }
 
   private async _handlePrint() {
@@ -206,7 +218,8 @@ export class ComicScriptPreviewPanel {
   }
   
   private _getHtmlForWebview(webview: vscode.Webview, markdown?: string, chapter?: Chapter) {
-    if (!markdown || !chapter) {
+    // Only show empty state if we have no current markdown at all
+    if (!markdown && !this._currentMarkdown) {
       const content = `
         <h1>Comic Script Preview</h1>
         <p>Select a YAML file and click the preview button to see the comic script rendered here.</p>
@@ -214,8 +227,39 @@ export class ComicScriptPreviewPanel {
       return this._getHtmlTemplate(content, true, '');
     }
     
-    const integratedContent = this._generateIntegratedPageSections(markdown, chapter);
-    return this._getHtmlTemplate(integratedContent, true, '');
+    // Use current markdown if no new markdown provided
+    const contentMarkdown = markdown || this._currentMarkdown;
+    if (!contentMarkdown) {
+      const content = `
+        <h1>Comic Script Preview</h1>
+        <p>Select a YAML file and click the preview button to see the comic script rendered here.</p>
+      `;
+      return this._getHtmlTemplate(content, true, '');
+    }
+    
+    // Try to generate integrated content if we have chapter data
+    const chapterToUse = chapter || this._lastValidChapter;
+    
+    if (chapterToUse) {
+      const integratedContent = this._generateIntegratedPageSections(contentMarkdown, chapterToUse);
+      return this._getHtmlTemplate(integratedContent, true, '');
+    }
+    
+    // If no chapter data, try to recreate it from the last valid YAML
+    if (this._lastValidYaml) {
+      try {
+        const recreatedChapter = yamlToChapter(this._lastValidYaml);
+        this._lastValidChapter = recreatedChapter;
+        const integratedContent = this._generateIntegratedPageSections(contentMarkdown, recreatedChapter);
+        return this._getHtmlTemplate(integratedContent, true, '');
+      } catch (error) {
+        console.log('Could not recreate chapter from last valid YAML:', error);
+      }
+    }
+    
+    // Fall back to just showing the markdown without layouts
+    const htmlContent = this._markdownToHtml(contentMarkdown);
+    return this._getHtmlTemplate(htmlContent, true, '');
   }
 
   private _getHtmlTemplate(content: string, includeButton: boolean, layouts: string = ''): string {
@@ -224,11 +268,12 @@ export class ComicScriptPreviewPanel {
                 <button id="printBtn" title="Print">🖨️</button>
             </div>` : '';
 
-    const printButtonScript = includeButton ? `
+    const webviewScript = `
         <script>
-            const vscode = acquireVsCodeApi();
+            ${includeButton ? 'const vscode = acquireVsCodeApi();' : ''}
             
             document.addEventListener('DOMContentLoaded', function() {
+                ${includeButton ? `
                 const printBtn = document.getElementById('printBtn');
                 if (printBtn) {
                     printBtn.addEventListener('click', function() {
@@ -237,9 +282,40 @@ export class ComicScriptPreviewPanel {
                     });
                 } else {
                     console.error('Print button not found');
-                }
+                }` : ''}
             });
-        </script>` : '';
+            
+            ${includeButton ? `
+            // Handle scroll synchronization messages from VS Code
+            window.addEventListener('message', function(event) {
+                const message = event.data;
+                if (message.type === 'scrollToElement') {
+                    let targetElement = null;
+                    
+                    // Try to find the specific panel first
+                    if (message.pageIndex !== undefined && message.panelIndex !== undefined) {
+                        targetElement = document.getElementById('page-' + message.pageIndex + '-panel-' + message.panelIndex);
+                    }
+                    
+                    // If no panel found or no panel specified, scroll to the page
+                    if (!targetElement && message.pageIndex !== undefined) {
+                        targetElement = document.getElementById('page-' + message.pageIndex);
+                    }
+                    
+                    if (targetElement) {
+                        // Scroll the element into view with some offset from the top
+                        const rect = targetElement.getBoundingClientRect();
+                        const absoluteTop = rect.top + window.pageYOffset;
+                        const offset = 50; // Offset from top for better visibility
+                        
+                        window.scrollTo({
+                            top: Math.max(0, absoluteTop - offset),
+                            behavior: 'smooth'
+                        });
+                    }
+                }
+            });` : ''}
+        </script>`;
 
     return `<!DOCTYPE html>
     <html lang="en">
@@ -438,7 +514,7 @@ export class ComicScriptPreviewPanel {
                 ${content}
             </div>
         </div>
-        ${printButtonScript}
+        ${webviewScript}
     </body>
     </html>`;
   }
@@ -572,6 +648,15 @@ export class ComicScriptPreviewPanel {
     const pageNum = index + 1;
     const pageName = page?.name || `Page ${pageNum}`;
     
+    // Add IDs to panel headers in the content
+    let processedContent = pageContent;
+    let panelIndex = 0;
+    processedContent = processedContent.replace(/<h3>/g, () => {
+      const id = `page-${index}-panel-${panelIndex}`;
+      panelIndex++;
+      return `<h3 id="${id}">`;
+    });
+    
     let layoutHtml = '';
     if (page?.layout && page.layout.trim()) {
       try {
@@ -605,9 +690,9 @@ export class ComicScriptPreviewPanel {
     }
     
     return `
-      <div class="page-section">
+      <div class="page-section" id="page-${index}">
         <div class="page-content">
-          ${pageContent}
+          ${processedContent}
         </div>
         ${layoutHtml}
       </div>
