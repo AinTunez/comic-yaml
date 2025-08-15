@@ -259,8 +259,9 @@ function findYamlContext(document: vscode.TextDocument, lineNumber: number): { p
       continue
     }
     
-    // Check for page start (look for "- name:" at page level)
-    if (inPages && /^  - (name:|panels:)/.test(line)) {
+    // Check for page start - pages can start with any field (name, layout, panels, etc.)
+    // Look for "  - " at the beginning (2 spaces, dash, space)
+    if (inPages && /^  - /.test(line)) {
       currentPageIndex++
       currentPanelIndex = -1
       inPanels = false
@@ -273,7 +274,7 @@ function findYamlContext(document: vscode.TextDocument, lineNumber: number): { p
       continue
     }
     
-    // Check for panel start
+    // Check for panel start (6 spaces, dash, space)
     if (inPanels && /^      - /.test(line)) {
       currentPanelIndex++
     }

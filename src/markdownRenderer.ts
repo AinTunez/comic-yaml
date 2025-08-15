@@ -33,10 +33,9 @@ export const renderPanel = (panel: Panel, panelIndex?: number): string => {
     return "### Error: Invalid panel data"
   }
   
-  const panelNumber = panelIndex !== undefined ? panelIndex + 1 : 1
   const title = panel.label 
-    ? `(Panel ${panelNumber}) ${panel.label}`
-    : `(Panel ${panelNumber})`
+    ? `Panel ${panel.label}`
+    : `Panel !!_NO_LABEL_!!`
   const parts: string[] = [`### ${title}`]
   
   if (panel.desc) {
