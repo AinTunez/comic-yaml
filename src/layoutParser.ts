@@ -30,8 +30,14 @@ export function parseLayout(layoutInput: string | string[]): ParsedLayout {
   // Parse as a simple character grid
   const grid: string[][] = [];
   for (const line of lines) {
-    // Split each line into individual characters (panel numbers)
-    const chars = line.split('').filter(char => char.trim());
+    // Split each line into individual characters
+    // Keep all characters including spaces, but convert '.' to empty space
+    const chars = line.split('').map(char => {
+      if (char === '.') {
+        return ' '; // Treat period as empty space for planning
+      }
+      return char;
+    });
     if (chars.length > 0) {
       grid.push(chars);
     }
@@ -60,7 +66,8 @@ export function parseLayout(layoutInput: string | string[]): ParsedLayout {
   for (let y = 0; y < normalizedGrid.length; y++) {
     for (let x = 0; x < normalizedGrid[y].length; x++) {
       const cell = normalizedGrid[y][x];
-      if (cell && cell !== '') {
+      // Skip empty cells (spaces, empty strings, dashes already converted to spaces)
+      if (cell && cell.trim() !== '') {
         if (!panelCells.has(cell)) {
           panelCells.set(cell, []);
         }
